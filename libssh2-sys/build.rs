@@ -1,5 +1,6 @@
 extern crate cc;
 extern crate pkg_config;
+extern crate semver;
 
 #[cfg(target_env = "msvc")]
 extern crate vcpkg;
@@ -8,6 +9,13 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+/*
+ In libssh2 v1.9.0 and earlier versions, the SSH_MSG_DISCONNECT logic in packet.c has an integer
+ overflow in a bounds check, enabling an attacker to specify an arbitrary (out-of-bounds) offset
+ for a subsequent memory read. A crafted SSH server may be able to disclose sensitive information
+ or cause a denial of service condition on the client system when a user connects to the server.
+*/
 
 const MIN_LIBSSH2_VERSION: &str = "1.10.0";
 
@@ -217,23 +225,24 @@ fn main() {
 }
 
 fn version_is_less_than(version: &str, minimum: &str) -> bool {
-    let version = version
-        .split('.')
-        .map(|part| part.parse::<u32>().unwrap_or(0));
-    let minimum = minimum
-        .split('.')
-        .map(|part| part.parse::<u32>().unwrap_or(0));
+    semver::Version::parse(version).unwrap() < semver::Version::parse(minimum).unwrap()
+}
 
-    version
-        .zip(minimum)
-        .find_map(|(current, required)| {
-            if current == required {
-                None
-            } else {
-                Some(current < required)
-            }
-        })
-        .unwrap_or(false)
+#[cfg(test)]
+mod tests {
+    use super::version_is_less_than;
+
+    #[test]
+    fn compares_semver_versions() {
+        assert!(version_is_less_than("1.9.0", "1.10.0"));
+        assert!(!version_is_less_than("1.10.0", "1.10.0"));
+        assert!(!version_is_less_than("1.11.0", "1.10.0"));
+    }
+
+    #[test]
+    fn compares_prereleases_before_releases() {
+        assert!(version_is_less_than("1.10.0-rc.1", "1.10.0"));
+    }
 }
 
 #[cfg(not(target_env = "msvc"))]
