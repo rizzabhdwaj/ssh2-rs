@@ -9,6 +9,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+const MIN_LIBSSH2_VERSION: &str = "1.10.0";
+
 fn main() {
     let zlib_ng_compat = env::var("CARGO_FEATURE_ZLIB_NG_COMPAT").is_ok();
 
@@ -22,9 +24,17 @@ fn main() {
     println!("cargo:rerun-if-env-changed=LIBSSH2_SYS_USE_PKG_CONFIG");
     if env::var("LIBSSH2_SYS_USE_PKG_CONFIG").is_ok() {
         if zlib_ng_compat {
-            panic!("LIBSSH2_SYS_USE_PKG_CONFIG set, but cannot use zlib-ng-compat with system libssh2");
+            panic!(
+                "LIBSSH2_SYS_USE_PKG_CONFIG set, but cannot use zlib-ng-compat with system libssh2"
+            );
         }
         if let Ok(lib) = pkg_config::find_library("libssh2") {
+            if version_is_less_than(&lib.version, MIN_LIBSSH2_VERSION) {
+                println!(
+                    "cargo:warning=libssh2 {} is older than the recommended minimum {}",
+                    lib.version, MIN_LIBSSH2_VERSION
+                );
+            }
             for path in &lib.include_paths {
                 println!("cargo:include={}", path.display());
             }
@@ -204,6 +214,26 @@ fn main() {
         println!("cargo:rustc-link-lib=user32");
         println!("cargo:rustc-link-lib=ntdll");
     }
+}
+
+fn version_is_less_than(version: &str, minimum: &str) -> bool {
+    let version = version
+        .split('.')
+        .map(|part| part.parse::<u32>().unwrap_or(0));
+    let minimum = minimum
+        .split('.')
+        .map(|part| part.parse::<u32>().unwrap_or(0));
+
+    version
+        .zip(minimum)
+        .find_map(|(current, required)| {
+            if current == required {
+                None
+            } else {
+                Some(current < required)
+            }
+        })
+        .unwrap_or(false)
 }
 
 #[cfg(not(target_env = "msvc"))]
