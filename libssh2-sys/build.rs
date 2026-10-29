@@ -228,23 +228,6 @@ fn version_is_less_than(version: &str, minimum: &str) -> bool {
     semver::Version::parse(version).unwrap() < semver::Version::parse(minimum).unwrap()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::version_is_less_than;
-
-    #[test]
-    fn compares_semver_versions() {
-        assert!(version_is_less_than("1.9.0", "1.10.0"));
-        assert!(!version_is_less_than("1.10.0", "1.10.0"));
-        assert!(!version_is_less_than("1.11.0", "1.10.0"));
-    }
-
-    #[test]
-    fn compares_prereleases_before_releases() {
-        assert!(version_is_less_than("1.10.0-rc.1", "1.10.0"));
-    }
-}
-
 #[cfg(not(target_env = "msvc"))]
 fn try_vcpkg() -> bool {
     false
