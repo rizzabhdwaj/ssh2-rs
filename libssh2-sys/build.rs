@@ -224,10 +224,6 @@ fn main() {
     }
 }
 
-fn version_is_less_than(version: &str, minimum: &str) -> bool {
-    semver::Version::parse(version).unwrap() < semver::Version::parse(minimum).unwrap()
-}
-
 #[cfg(not(target_env = "msvc"))]
 fn try_vcpkg() -> bool {
     false
