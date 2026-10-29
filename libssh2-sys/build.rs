@@ -37,7 +37,7 @@ fn main() {
             );
         }
         if let Ok(lib) = pkg_config::find_library("libssh2") {
-            if version_is_less_than(&lib.version, MIN_LIBSSH2_VERSION) {
+            if semver::Version::parse(&lib.version).unwrap() < MIN_LIBSSH2_VERSION {
                 println!(
                     "cargo:warning=libssh2 {} is older than the recommended minimum {}",
                     lib.version, MIN_LIBSSH2_VERSION
