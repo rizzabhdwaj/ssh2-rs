@@ -17,7 +17,7 @@ use std::process::Command;
  or cause a denial of service condition on the client system when a user connects to the server.
 */
 
-const MIN_LIBSSH2_VERSION: &str = "1.10.0";
+const MIN_LIBSSH2_VERSION: semver::Version = semver::Version::new(1, 10, 0);
 
 fn main() {
     let zlib_ng_compat = env::var("CARGO_FEATURE_ZLIB_NG_COMPAT").is_ok();
